@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using DailyProduction.Model;
+using Azure.Data.Tables;
+using Azure;
+
 
 namespace IbasAPI.Controllers
 {
@@ -15,9 +18,16 @@ namespace IbasAPI.Controllers
 
         private List<DailyProductionDTO> _productionRepo;
         private readonly ILogger<DailyProductionController> _logger;
+        private TableClient tableclient;
 
         public DailyProductionController(ILogger<DailyProductionController> logger)
         {
+            tableclient = new TableClient(
+                new Uri("https://ibastestgroupstorage.table.core.windows.net"),
+                "IBASProduktion2020",
+                new TableSharedKeyCredential("ibastestgroupstorage", "p1r0wpIR3lnL71LAcvCA8pBMxVBOBhHD+q0P/mavUCW50LJIkNWdYMEeEHCzuynsIGbV3ZaD/vEL+AStIuVKcw==")
+            );
+            /*
             _logger = logger;
             _productionRepo = new List<DailyProductionDTO>
             {
@@ -60,12 +70,25 @@ namespace IbasAPI.Controllers
                 new DailyProductionDTO {Date = new DateTime(2020, 11, 30), Model = BikeModel.evIB200, ItemsProduced = 61},
                 new DailyProductionDTO {Date = new DateTime(2020, 12, 31), Model = BikeModel.evIB200, ItemsProduced = 88}
             };
+            */
         }
         
         [HttpGet]
         public IEnumerable<DailyProductionDTO> Get()
         {
-            return _productionRepo;
+            var produktion = new List<DailyProductionDTO>();
+            Pageable<TableEntity> entities = this.tableclient.Query<TableEntity>();
+            foreach(TableEntity entity in entities)
+            {
+                var dto = new DailyProductionDTO
+                {
+                    Date = DateTime.Parse(entity.RowKey),
+                    Model = (BikeModel)Enum.ToObject(typeof(BikeModel), Int32.Parse(entity.PartitionKey)),
+                    ItemsProduced = (int)entity.GetInt32("itemsProduced")
+                };
+                produktion.Add(dto);
+            }
+            return produktion;
         }
     }
 }
