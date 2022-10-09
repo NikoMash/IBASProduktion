@@ -1,0 +1,21 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "virtualMachines_ibas_template_vm_name": {
+            "value": null
+        },
+        "networkInterfaces_ibas_template_vmVMNic_name": {
+            "value": null
+        },
+        "networkSecurityGroups_ibas_template_vmNSG_name": {
+            "value": null
+        },
+        "publicIPAddresses_ibas_template_vmPublicIP_name": {
+            "value": null
+        },
+        "virtualNetworks_ibas_template_vmVNET_externalid": {
+            "value": null
+        }
+    }
+}

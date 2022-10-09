@@ -1,0 +1,226 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "virtualMachines_ibas_template_vm_name": {
+            "defaultValue": "ibas-production-eun-vm",
+            "type": "String"
+        },
+        "networkInterfaces_ibas_template_vmVMNic_name": {
+            "defaultValue": "ibas-production-eun-vmVMNic",
+            "type": "String"
+        },
+        "networkSecurityGroups_ibas_template_vmNSG_name": {
+            "defaultValue": "ibas-production-eun-vmNSG",
+            "type": "String"
+        },
+        "publicIPAddresses_ibas_template_vmPublicIP_name": {
+            "defaultValue": "ibas-production-eun-vmPublicIP",
+            "type": "String"
+        },
+        "virtualNetworks_ibas_template_vmVNET_externalid": {
+            "defaultValue": "/subscriptions/5b4e436a-2ec4-4c05-ba9e-669eb521efa5/resourceGroups/IBASTestGroup/providers/Microsoft.Network/virtualNetworks/ibas-production-eun-vmVNET",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2020-11-01",
+            "name": "[parameters('networkSecurityGroups_ibas_template_vmNSG_name')]",
+            "location": "northeurope",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "default-allow-ssh",
+                        "properties": {
+                            "protocol": "TCP",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "22",
+                            "sourceAddressPrefix": "10.0.0.0/24",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 1000,
+                            "direction": "Inbound",
+                            "sourcePortRanges": [],
+                            "destinationPortRanges": [],
+                            "sourceAddressPrefixes": [],
+                            "destinationAddressPrefixes": []
+                        }
+                    },
+                    {
+                        "name": "open-port-5001",
+                        "properties": {
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "5001",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 900,
+                            "direction": "Inbound",
+                            "sourcePortRanges": [],
+                            "destinationPortRanges": [],
+                            "sourceAddressPrefixes": [],
+                            "destinationAddressPrefixes": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2020-11-01",
+            "name": "[parameters('publicIPAddresses_ibas_template_vmPublicIP_name')]",
+            "location": "northeurope",
+            "sku": {
+                "name": "Basic",
+                "tier": "Regional"
+            },
+            "properties": {
+                "ipAddress": "13.69.193.45",
+                "publicIPAddressVersion": "IPv4",
+                "publicIPAllocationMethod": "Static",
+                "idleTimeoutInMinutes": 4,
+                "ipTags": []
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2022-03-01",
+            "name": "[parameters('virtualMachines_ibas_template_vm_name')]",
+            "location": "northeurope",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_ibas_template_vmVMNic_name'))]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_B1s"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "Canonical",
+                        "offer": "UbuntuServer",
+                        "sku": "18.04-LTS",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "osType": "Linux",
+                        "name": "[concat(parameters('virtualMachines_ibas_template_vm_name'), '_OsDisk_1_fd2284fa1a2241a382b31e5815f3d697')]",
+                        "createOption": "FromImage",
+                        "caching": "ReadWrite",
+                        "managedDisk": {
+                            "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_ibas_template_vm_name'), '_OsDisk_1_fd2284fa1a2241a382b31e5815f3d697'))]"
+                        },
+                        "deleteOption": "Detach"
+                    },
+                    "dataDisks": []
+                },
+                "osProfile": {
+                    "computerName": "[parameters('virtualMachines_ibas_template_vm_name')]",
+                    "adminUsername": "ibas",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": false,
+                        "provisionVMAgent": true,
+                        "patchSettings": {
+                            "patchMode": "ImageDefault",
+                            "assessmentMode": "ImageDefault"
+                        }
+                    },
+                    "secrets": [],
+                    "allowExtensionOperations": true,
+                    "requireGuestProvisionSignal": true
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_ibas_template_vmVMNic_name'))]"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+            "apiVersion": "2020-11-01",
+            "name": "[concat(parameters('networkSecurityGroups_ibas_template_vmNSG_name'), '/default-allow-ssh')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_ibas_template_vmNSG_name'))]"
+            ],
+            "properties": {
+                "protocol": "TCP",
+                "sourcePortRange": "*",
+                "destinationPortRange": "22",
+                "sourceAddressPrefix": "10.0.0.0/24",
+                "destinationAddressPrefix": "*",
+                "access": "Allow",
+                "priority": 1000,
+                "direction": "Inbound",
+                "sourcePortRanges": [],
+                "destinationPortRanges": [],
+                "sourceAddressPrefixes": [],
+                "destinationAddressPrefixes": []
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+            "apiVersion": "2020-11-01",
+            "name": "[concat(parameters('networkSecurityGroups_ibas_template_vmNSG_name'), '/open-port-5001')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_ibas_template_vmNSG_name'))]"
+            ],
+            "properties": {
+                "protocol": "*",
+                "sourcePortRange": "*",
+                "destinationPortRange": "5001",
+                "sourceAddressPrefix": "*",
+                "destinationAddressPrefix": "*",
+                "access": "Allow",
+                "priority": 900,
+                "direction": "Inbound",
+                "sourcePortRanges": [],
+                "destinationPortRanges": [],
+                "sourceAddressPrefixes": [],
+                "destinationAddressPrefixes": []
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2020-11-01",
+            "name": "[parameters('networkInterfaces_ibas_template_vmVMNic_name')]",
+            "location": "northeurope",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_ibas_template_vmPublicIP_name'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_ibas_template_vmNSG_name'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfigibas-production-eun-vm",
+                        "properties": {
+                            "privateIPAddress": "10.0.0.4",
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_ibas_template_vmPublicIP_name'))]"
+                            },
+                            "subnet": {
+                                "id": "[concat(parameters('virtualNetworks_ibas_template_vmVNET_externalid'), '/subnets/ibas-production-eun-vmSubnet')]"
+                            },
+                            "primary": true,
+                            "privateIPAddressVersion": "IPv4"
+                        }
+                    }
+                ],
+                "dnsSettings": {
+                    "dnsServers": []
+                },
+                "enableAcceleratedNetworking": false,
+                "enableIPForwarding": false,
+                "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_ibas_template_vmNSG_name'))]"
+                }
+            }
+        }
+    ]
+}
